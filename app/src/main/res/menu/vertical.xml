@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:showIn="navigation_view">
+    <group
+        android:checkableBehavior="single">
+        <item
+            android:id="@+id/nav_home"
+            android:icon="@drawable/tag"
+            android:title="Casa"/>
+    </group>
+    <item
+        android:id="@+id/add_tag"
+        android:icon="@drawable/agregar"
+        android:title="Agregar"/>
+
+</menu>
