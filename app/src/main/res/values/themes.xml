@@ -2,8 +2,10 @@
     <!-- Base application theme. -->
     <style name="Base.Theme.GestorContactos" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+        <item name="colorPrimary">@color/bg</item>
+        <item name="android:windowBackground">@color/bg</item>
     </style>
 
-    <style name="Theme.GestorContactos" parent="Base.Theme.GestorContactos" />
+    <style name="Theme.GestorContactos" parent="Base.Theme.GestorContactos">
+    </style>
 </resources>
