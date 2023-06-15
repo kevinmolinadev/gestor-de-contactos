@@ -10,8 +10,8 @@
         android:id="@+id/favorite"
         android:icon="@drawable/favoritos"
         />
-    <item android:title="Nosotros"
+    <!--<item android:title="Nosotros"
         android:id="@+id/about_us"
         android:icon="@drawable/informacion"
-        />
+        />-->
 </menu>
