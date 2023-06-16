@@ -24,10 +24,10 @@ import com.example.gestorcontactos.Pantallas.tag;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.navigation.NavigationView;
 
-public class MainActivity extends AppCompatActivity implements SearchView.OnQueryTextListener{
+public class MainActivity extends AppCompatActivity implements SearchView.OnQueryTextListener, NavigationView.OnNavigationItemSelectedListener{
     DrawerLayout drawerLayout;
     NavigationView navigationView;
-    BottomNavigationView bottomNavigationView;
+    //BottomNavigationView bottomNavigationView;
     Toolbar toolbar;
     SearchView search;
 
@@ -39,7 +39,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         busqueda();
     }
     public void Inicio() {
-        bottomNavigationView = findViewById(R.id.bottomNavigationView);
+        //bottomNavigationView = findViewById(R.id.bottomNavigationView);
         drawerLayout = findViewById(R.id.drawer_layout);
         navigationView = findViewById(R.id.nav_view);
         toolbar = findViewById(R.id.toolbar);
@@ -48,9 +48,11 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                 R.string.close);
         drawerLayout.addDrawerListener(toggle);
         toggle.syncState();
-
+        navigationView.setNavigationItemSelectedListener(this);
         replaceFragment(new contactos());
-        bottomNavigationView.setOnItemSelectedListener(item -> {
+        navigationView.setCheckedItem(R.id.contact);
+        //replaceFragment(new contactos());
+        /*bottomNavigationView.setOnItemSelectedListener(item -> {
             int itemId = item.getItemId();
             if (itemId == R.id.contact) {
                 replaceFragment(new contactos());
@@ -58,10 +60,28 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
                 replaceFragment(new favorite());
             }
             return true;
-        });
+        });*/
     }
-    /*getSupportFragmentManager().beginTransaction().replace(R.id.drawer_layout, new tag()).commit();
-            navigationView.setCheckedItem(R.id.casa);*/
+    @Override
+    public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+        int itemId = item.getItemId();
+        if (itemId == R.id.contact) {
+            replaceFragment(new contactos());
+        } else if (itemId == R.id.favorite) {
+            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new favorite()).commit();
+        } else if (itemId == R.id.about_us) {
+            getSupportFragmentManager().beginTransaction().replace(R.id.fragment_container, new about_us()).commit();
+        } else if (itemId == R.id.casa) {
+            Toast.makeText(this, "Casa", Toast.LENGTH_SHORT).show();
+        } else if (itemId == R.id.universidad) {
+            Toast.makeText(this, "Universidad", Toast.LENGTH_SHORT).show();
+        } else if (itemId == R.id.add_tag) {
+            getSupportFragmentManager().beginTransaction().replace(R.id.drawer_layout, new tag()).commit();
+        }
+        drawerLayout.closeDrawer(GravityCompat.START);
+        return true;
+    }
+
     private void replaceFragment(Fragment fragment) {
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
@@ -76,7 +96,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
 
     @Override
     public boolean onQueryTextSubmit(String query) {
-        System.out.println("Texto de búsqueda: " + query);
+        Toast.makeText(this, query, Toast.LENGTH_SHORT).show();
         return true;
     }
 
@@ -89,7 +109,13 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
         Fragment fragment = getSupportFragmentManager().findFragmentById(R.id.drawer_layout);
         if (fragment != null) {
             getSupportFragmentManager().beginTransaction().remove(fragment).commit();
+            replaceFragment(new contactos());
+            navigationView.setCheckedItem(R.id.contact);
+
         }
+    }
+    public void add_contact(View view){
+        Toast.makeText(this, "Agregar contacto", Toast.LENGTH_SHORT).show();
     }
 }
 
