@@ -21,7 +21,16 @@
     <item
         android:title="Etiquetas">
         <menu>
+            <item
+                android:id="@+id/add_tag"
+                android:icon="@drawable/agregar"
+                android:title="Agregar"/>
+        </menu>
+
+    </item>
+
             <group
+                android:id="@+id/group_main"
                 android:checkableBehavior="single">
                 <item
                     android:id="@+id/casa"
@@ -31,12 +40,5 @@
                     android:id="@+id/universidad"
                     android:icon="@drawable/tag"
                     android:title="universidad"/>
-                <item
-                    android:id="@+id/add_tag"
-                    android:icon="@drawable/agregar"
-                    android:title="Agregar"/>
             </group>
-
-        </menu>
-    </item>
 </menu>
