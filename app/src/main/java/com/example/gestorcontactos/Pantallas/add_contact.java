@@ -8,9 +8,13 @@ import android.os.Bundle;
 
 import androidx.constraintlayout.utils.widget.ImageFilterView;
 import androidx.fragment.app.Fragment;
+import androidx.recyclerview.widget.RecyclerView;
+import androidx.room.Room;
 
+import android.os.Handler;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,25 +22,39 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
+import com.example.gestorcontactos.Adapters.ContactAdapter;
 import com.example.gestorcontactos.Clases.Agenda;
 import com.example.gestorcontactos.Clases.Contact;
+import com.example.gestorcontactos.DAO.ContactoDAO;
+import com.example.gestorcontactos.Database.AppDatabase;
+import com.example.gestorcontactos.Database.DatabaseClient;
+import com.example.gestorcontactos.MainActivity;
 import com.example.gestorcontactos.R;
 
 import java.io.ByteArrayOutputStream;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Executors;
 
 public class add_contact extends Fragment {
     Agenda agenda = Agenda.getInstance();
+
     EditText name;
     Contact contact;
     EditText phone;
+    ContactAdapter contactAdapter;
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
+
         View view = inflater.inflate(R.layout.fragment_add_contact, container, false);
+        //contactAdapter = new  ContactAdapter(getContext(),agenda.getContacts(),false);
         name = view.findViewById(R.id.Name);
         phone = view.findViewById(R.id.Phone);
         Button addButton = view.findViewById(R.id.button);
+        agenda.clearContact();
+        getAllContactsInDatabse();
+
         addButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -49,6 +67,7 @@ public class add_contact extends Fragment {
                     String profileImageString = convertBitmapToString(profileBitmap);
                     Contact contact = new Contact(setName, setPhone);
                     contact.setImage(profileImageString);
+                    //insertContactInDatabase(contact);
                     agenda.addContact(contact);
                     name.setText("");
                     phone.setText("");
@@ -104,4 +123,30 @@ public class add_contact extends Fragment {
         byte[] byteArray = byteArrayOutputStream.toByteArray();
         return Base64.encodeToString(byteArray, Base64.DEFAULT);
     }
+
+
+
+    private void getAllContactsInDatabse(){
+        Runnable getAll = new Runnable() {
+            @Override
+            public void run() {
+                AppDatabase db = DatabaseClient.getAppDatabase(getContext());
+                ContactoDAO contactoDAO = db.contactoDAO();
+                List<Contact> contactos = contactoDAO.getAll();
+                for (Contact contacto:contactos) {
+                    Bitmap profileBitmap = generateProfileImage(contacto.getName());
+                    String profileImageString = convertBitmapToString(profileBitmap);
+                    Contact contact = new Contact(contacto.getName(), contacto.getNumber());
+                    contact.setImage(profileImageString);
+                    agenda.addContact(contact);
+                    contactAdapter.notifyDataSetChanged();
+                }
+
+            }
+        };
+        Thread insertThread = new Thread(getAll);
+        insertThread.start();
+
+    }
+
 }

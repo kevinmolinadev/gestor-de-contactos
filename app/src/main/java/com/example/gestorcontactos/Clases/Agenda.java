@@ -41,4 +41,7 @@ public class Agenda {
     public void deleteFavorite(Contact contact){
         contactsFavorite.remove(contact);
     }
+    public void clearContact(){
+        contacts.clear();
+    }
 }
