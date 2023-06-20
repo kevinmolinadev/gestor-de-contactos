@@ -66,11 +66,11 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactH
             public void onClick(View v) {
                 AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
                 LayoutInflater inflater = LayoutInflater.from(v.getContext());
-                View dialogView = inflater.inflate(R.layout.layout_view_contact, null);
+                View dialogView = inflater.inflate(R.layout.fragment_add_contact, null);
                 builder.setView(dialogView);
                 AlertDialog alertDialog;
-                ImageFilterView image = dialogView.findViewById(R.id.image);
-                image.setImageBitmap(profileBitmap);
+                //ImageFilterView image = dialogView.findViewById(R.id.image);
+                //image.setImageBitmap(profileBitmap);
                 EditText nameTextView = dialogView.findViewById(R.id.Name);
                 nameTextView.setText(contact.getName());
                 nameTextView.setEnabled(false);

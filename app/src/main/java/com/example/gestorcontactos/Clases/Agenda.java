@@ -20,6 +20,10 @@ public class Agenda {
         return instance;
     }
 
+    public void setContacts(List<Contact> contacts) {
+        this.contacts = contacts;
+    }
+
     public List<Contact> getContacts() {
         return contacts;
     }
