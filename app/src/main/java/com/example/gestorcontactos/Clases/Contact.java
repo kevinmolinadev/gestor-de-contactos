@@ -3,7 +3,7 @@ package com.example.gestorcontactos.Clases;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
-@Entity
+@Entity(tableName = "contact")
 public class Contact {
     @PrimaryKey(autoGenerate = true)
     private int id;
@@ -52,7 +52,6 @@ public class Contact {
     public String toString() {
         return "Contact{" +
                 "id=" + id +
-                ", image='" + image + '\'' +
                 ", name='" + name + '\'' +
                 ", number='" + number + '\'' +
                 '}';

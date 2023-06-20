@@ -34,13 +34,6 @@
                     android:textColor="@color/white"
                     android:textStyle="bold"
                     />
-                <Button
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:onClick="close"
-                    android:text="JJDAS">
-
-                </Button>
             </LinearLayout>
             <LinearLayout
                 android:layout_width="match_parent"

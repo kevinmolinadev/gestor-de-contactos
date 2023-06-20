@@ -28,7 +28,6 @@
         </menu>
 
     </item>
-
             <group
                 android:id="@+id/group_main"
                 android:checkableBehavior="single">
