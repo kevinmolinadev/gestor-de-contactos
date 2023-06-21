@@ -25,10 +25,6 @@ import android.widget.Toast;
 import com.example.gestorcontactos.Adapters.ContactAdapter;
 import com.example.gestorcontactos.Clases.Agenda;
 import com.example.gestorcontactos.Clases.Contact;
-import com.example.gestorcontactos.DAO.ContactoDAO;
-import com.example.gestorcontactos.Database.AppDatabase;
-import com.example.gestorcontactos.Database.DatabaseClient;
-import com.example.gestorcontactos.MainActivity;
 import com.example.gestorcontactos.R;
 
 import java.io.ByteArrayOutputStream;
@@ -52,8 +48,7 @@ public class add_contact extends Fragment {
         name = view.findViewById(R.id.Name);
         phone = view.findViewById(R.id.Phone);
         Button addButton = view.findViewById(R.id.button);
-        agenda.clearContact();
-        getAllContactsInDatabse();
+        agenda.clearContacts();
 
         addButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -122,31 +117,6 @@ public class add_contact extends Fragment {
         bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
         byte[] byteArray = byteArrayOutputStream.toByteArray();
         return Base64.encodeToString(byteArray, Base64.DEFAULT);
-    }
-
-
-
-    private void getAllContactsInDatabse(){
-        Runnable getAll = new Runnable() {
-            @Override
-            public void run() {
-                AppDatabase db = DatabaseClient.getAppDatabase(getContext());
-                ContactoDAO contactoDAO = db.contactoDAO();
-                List<Contact> contactos = contactoDAO.getAll();
-                for (Contact contacto:contactos) {
-                    Bitmap profileBitmap = generateProfileImage(contacto.getName());
-                    String profileImageString = convertBitmapToString(profileBitmap);
-                    Contact contact = new Contact(contacto.getName(), contacto.getNumber());
-                    contact.setImage(profileImageString);
-                    agenda.addContact(contact);
-                    contactAdapter.notifyDataSetChanged();
-                }
-
-            }
-        };
-        Thread insertThread = new Thread(getAll);
-        insertThread.start();
-
     }
 
 }

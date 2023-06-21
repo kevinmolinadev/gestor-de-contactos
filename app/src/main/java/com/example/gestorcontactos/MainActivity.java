@@ -11,7 +11,7 @@ import androidx.drawerlayout.widget.DrawerLayout;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 import androidx.fragment.app.FragmentTransaction;
-
+import androidx.room.Room;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -21,46 +21,54 @@ import android.text.TextUtils;
 import android.util.Base64;
 import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MenuInflater;
 import android.view.MenuItem;
-import android.view.SubMenu;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import com.example.gestorcontactos.Adapters.ContactAdapter;
+import com.example.gestorcontactos.Adapters.Funciones;
 import com.example.gestorcontactos.Clases.Agenda;
 import com.example.gestorcontactos.Clases.Contact;
-import com.example.gestorcontactos.DAO.ContactoDAO;
-import com.example.gestorcontactos.Database.AppDatabase;
-import com.example.gestorcontactos.Database.DatabaseClient;
+import com.example.gestorcontactos.DB.ClientDataBase;
+import com.example.gestorcontactos.DB.DataBase;
 import com.example.gestorcontactos.Pantallas.about_us;
-import com.example.gestorcontactos.Pantallas.add_contact;
 import com.example.gestorcontactos.Pantallas.contactos;
 import com.example.gestorcontactos.Pantallas.favorite;
+import com.example.gestorcontactos.Pantallas.isEmtyContact;
 import com.google.android.material.navigation.NavigationView;
 
 import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity implements SearchView.OnQueryTextListener, NavigationView.OnNavigationItemSelectedListener{
     Agenda agenda=Agenda.getInstance();
+    Funciones funciones= Funciones.getInstance();
     DrawerLayout drawerLayout;
     NavigationView navigationView;
     Toolbar toolbar;
     SearchView search;
-    ContactAdapter contactAdapter;
     AlertDialog alertDialog;
+    ContactAdapter contactAdapter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        contactAdapter=new ContactAdapter(MainActivity.this,agenda.getContacts(),false);
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                DataBase db = ClientDataBase.getAppDatabase(getBaseContext());
+                agenda.setContacts(db.contactDao().loadAll());
+                replaceFragment(new contactos());
+            }
+        });
         Inicio();
-        getAllContactsInDatabse();
         busqueda();
+
     }
     public void Inicio() {
         drawerLayout = findViewById(R.id.drawer_layout);
@@ -85,11 +93,7 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
             replaceFragment(new favorite());
         } else if (itemId == R.id.about_us) {
             getSupportFragmentManager().beginTransaction().replace(R.id.drawer_layout, new about_us()).commit();
-        } else if (itemId == R.id.casa) {
-            Toast.makeText(this, "Casa", Toast.LENGTH_SHORT).show();
-        } else if (itemId == R.id.universidad) {
-            Toast.makeText(this, "Universidad", Toast.LENGTH_SHORT).show();
-        } else if (itemId == R.id.add_tag) {
+        }else if (itemId == R.id.add_tag) {
             showAddTagDialog();
         }
         drawerLayout.closeDrawer(GravityCompat.START);
@@ -99,12 +103,15 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     private void replaceFragment(Fragment fragment) {
         FragmentManager fragmentManager = getSupportFragmentManager();
         FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        fragmentTransaction.replace(R.id.fragment_container, fragment);
+        if (!agenda.getContacts().isEmpty()){
+            fragmentTransaction.replace(R.id.fragment_container, fragment);
+        }else{
+            fragmentTransaction.replace(R.id.fragment_container, new isEmtyContact());
+        }
         fragmentTransaction.commit();
     }
     private void showAddTagDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
         LayoutInflater inflater = LayoutInflater.from(this);
         View dialogView = inflater.inflate(R.layout.layout_tag, null);
         builder.setView(dialogView);
@@ -129,12 +136,41 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     }
     public void busqueda() {
         search = findViewById(R.id.search);
+        search.setQueryHint("Ingrese un nombre");
+        search.setOnCloseListener(new SearchView.OnCloseListener() {
+            @Override
+            public boolean onClose() {
+                Executors.newSingleThreadExecutor().execute(new Runnable() {
+                    @Override
+                    public void run() {
+                        DataBase db = ClientDataBase.getAppDatabase(getBaseContext());
+                        agenda.clearContacts();
+                        agenda.setContacts(db.contactDao().loadAll());
+                        replaceFragment(new contactos());
+                    }
+                });
+                return false;
+            }
+        });
         search.setOnQueryTextListener(this);
     }
 
     @Override
     public boolean onQueryTextSubmit(String query) {
-        Toast.makeText(this, query, Toast.LENGTH_SHORT).show();
+        Executors.newSingleThreadExecutor().execute(new Runnable() {
+            @Override
+            public void run() {
+                DataBase db = ClientDataBase.getAppDatabase(getBaseContext());
+
+                agenda.clearContacts();
+                    contactAdapter.notifyDataSetChanged();
+                    List<Contact> l= db.contactDao().loadAllByName(query);
+                    agenda.setContacts(l);
+                    contactAdapter.notifyDataSetChanged();
+                    replaceFragment(new contactos());
+            }
+        });
+
         return true;
     }
 
@@ -162,122 +198,52 @@ public class MainActivity extends AppCompatActivity implements SearchView.OnQuer
     }
     public void new_contact(View view){
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-
         LayoutInflater inflater = LayoutInflater.from(this);
         View dialogView = inflater.inflate(R.layout.fragment_add_contact, null);
         builder.setView(dialogView);
-
         EditText name = dialogView.findViewById(R.id.Name);
-        EditText phone= dialogView.findViewById(R.id.Phone);
+        EditText phone = dialogView.findViewById(R.id.Phone);
         Button addButton = dialogView.findViewById(R.id.button);
         alertDialog = builder.create();
+
         addButton.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view) {
+            public void onClick(View v) {
                 String setName = name.getText().toString();
                 String setPhone = phone.getText().toString();
                 if (setName.isEmpty() || setPhone.isEmpty()) {
-                    Toast.makeText(getBaseContext(), "Campos requeridos", Toast.LENGTH_SHORT).show();
-                }else {
-                    Bitmap profileBitmap = generateProfileImage(setName);
-                    String profileImageString = convertBitmapToString(profileBitmap);
+                    Toast.makeText(MainActivity.this, "Campos requeridos", Toast.LENGTH_SHORT).show();
+                } else {
+                    Bitmap profileBitmap = funciones.generateProfileImage(setName);
+                    String profileImageString = funciones.convertBitmapToString(profileBitmap);
                     Contact contact = new Contact(setName, setPhone);
                     contact.setImage(profileImageString);
-                    insertContactInDatabase(contact);
                     agenda.addContact(contact);
-                    contactAdapter.notifyDataSetChanged();
+                    Executors.newSingleThreadExecutor().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            DataBase db = ClientDataBase.getAppDatabase(getBaseContext());
+
+                            db.contactDao().insertAll(contact);
+                            List<Contact> c=db.contactDao().loadAll();
+                            for (Contact a:c
+                                 ) {
+                                System.out.println(a.toString());
+                            }
+                        }
+                    });
                     name.setText("");
                     phone.setText("");
-                    Toast.makeText(getBaseContext(), "Contacto agregado con éxito", Toast.LENGTH_SHORT).show();
+                    Toast.makeText(MainActivity.this, "Contacto Agregadp", Toast.LENGTH_SHORT).show();
+                    replaceFragment(new contactos());
+                    alertDialog.dismiss();
                 }
             }
         });
         alertDialog.getWindow().setBackgroundDrawableResource(R.color.fondo);
         alertDialog.show();
-    }
-
-    private Bitmap generateProfileImage(String name) {
-        int width = 200;
-        int height = 200;
-        Bitmap bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
-        Canvas canvas = new Canvas(bitmap);
-
-        // Generar un color aleatorio para el fondo
-        Random random = new Random();
-        int backgroundColor = Color.argb(255, random.nextInt(256), random.nextInt(256), random.nextInt(256));
-        canvas.drawColor(backgroundColor);
-
-        // Configurar el pincel para dibujar las iniciales
-        Paint textPaint = new Paint();
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(80);
-        textPaint.setTextAlign(Paint.Align.CENTER);
-
-        // Obtener las iniciales del nombre
-        String initials;
-        if (!TextUtils.isEmpty(name)) {
-            String[] nameParts = name.trim().split("\\s+");
-            StringBuilder initialsBuilder = new StringBuilder();
-            for (String part : nameParts) {
-                if (part.length() > 0) {
-                    initialsBuilder.append(part.charAt(0));
-                }
-            }
-            initials = initialsBuilder.toString().toUpperCase();
-        } else {
-            initials = "";
         }
-
-        // Dibujar las iniciales en el centro de la imagen
-        int xPos = canvas.getWidth() / 2;
-        int yPos = (int) ((canvas.getHeight() / 2) - ((textPaint.descent() + textPaint.ascent()) / 2));
-        canvas.drawText(initials, xPos, yPos, textPaint);
-
-        return bitmap;
-    }
-
-    private String convertBitmapToString(Bitmap bitmap) {
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, byteArrayOutputStream);
-        byte[] byteArray = byteArrayOutputStream.toByteArray();
-        return Base64.encodeToString(byteArray, Base64.DEFAULT);
-    }
-
-    private void insertContactInDatabase(Contact contact){
-        Runnable insercion = new Runnable() {
-            @Override
-            public void run() {
-                AppDatabase db = DatabaseClient.getAppDatabase(getBaseContext());
-                ContactoDAO contactoDAO = db.contactoDAO();
-                contactoDAO.insertAll(contact);
-            }
-        };
-
-        Thread insertThread = new Thread(insercion);
-        insertThread.start();
-    }
-    private void getAllContactsInDatabse(){
-        Runnable getAll = new Runnable() {
-            @Override
-            public void run() {
-                AppDatabase db = DatabaseClient.getAppDatabase(getBaseContext());
-                ContactoDAO contactoDAO = db.contactoDAO();
-                List<Contact> contactos = contactoDAO.getAll();
-                for (Contact contacto:contactos) {
-                    Bitmap profileBitmap = generateProfileImage(contacto.getName());
-                    String profileImageString = convertBitmapToString(profileBitmap);
-                    Contact contact = new Contact(contacto.getName(), contacto.getNumber());
-                    contact.setImage(profileImageString);
-                    agenda.addContact(contact);
-                    contactAdapter.notifyDataSetChanged();
-                }
-
-            }
-        };
-        Thread insertThread = new Thread(getAll);
-        insertThread.start();
-
-    }
 }
+
 
 

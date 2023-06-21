@@ -46,10 +46,11 @@
                 android:layout_width="35dp"
                 android:layout_height="40dp"
                 app:srcCompat="@drawable/favoritos" />
+
             <Spinner
                 android:id="@+id/spinner"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
+                android:layout_width="74dp"
+                android:layout_height="wrap_content" />
         </LinearLayout>
     </LinearLayout>
 </androidx.constraintlayout.widget.ConstraintLayout>

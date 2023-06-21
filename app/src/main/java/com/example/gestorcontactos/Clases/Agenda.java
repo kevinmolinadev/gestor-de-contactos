@@ -20,6 +20,10 @@ public class Agenda {
         return instance;
     }
 
+    public void setContacts(List<Contact> contacts) {
+        this.contacts = contacts;
+    }
+
     public List<Contact> getContacts() {
         return contacts;
     }
@@ -41,7 +45,7 @@ public class Agenda {
     public void deleteFavorite(Contact contact){
         contactsFavorite.remove(contact);
     }
-    public void clearContact(){
+    public void clearContacts(){
         contacts.clear();
     }
 }

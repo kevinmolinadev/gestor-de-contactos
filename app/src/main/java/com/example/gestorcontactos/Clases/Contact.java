@@ -3,7 +3,7 @@ package com.example.gestorcontactos.Clases;
 import androidx.room.Entity;
 import androidx.room.PrimaryKey;
 
-@Entity(tableName = "contacto")
+@Entity(tableName = "contact")
 public class Contact {
     @PrimaryKey(autoGenerate = true)
     private int id;
@@ -14,6 +14,14 @@ public class Contact {
     public Contact(String name, String number) {
         this.name = name;
         this.number = number;
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public void setId(int id) {
+        this.id = id;
     }
 
     public String getImage() {
@@ -39,14 +47,12 @@ public class Contact {
     public void setNumber(String number) {
         this.number = number;
     }
-
-
-    public int getId() {
-        return id;
+    @Override
+    public String toString() {
+        return "Contact{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", number='" + number + '\'' +
+                '}';
     }
-
-    public void setId(int id) {
-        this.id = id;
-    }
-
 }
