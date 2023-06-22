@@ -20,6 +20,6 @@ public interface ContactDao {
     void deleteContact(Contact contact);
     @Update
     void update(Contact contact);
-    @Query("SELECT * FROM contact WHERE name IN (:contactName)")
+    @Query("SELECT * FROM contact WHERE name LIKE :contactName || '%'")
     List<Contact> loadAllByName(String... contactName);
 }

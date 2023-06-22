@@ -30,6 +30,7 @@
                     android:background="@color/bg"
                     android:textSize="20dp"
                     android:layout_weight="1"
+                    android:paddingVertical="15dp"
                     android:textAlignment="center"
                     android:textColor="@color/white"
                     android:textStyle="bold"

@@ -1,17 +1,24 @@
 package com.example.gestorcontactos.Adapters;
 
 import android.content.Context;
+import android.database.sqlite.SQLiteConstraintException;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.util.Base64;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.LinearLayout;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -24,6 +31,8 @@ import androidx.room.Room;
 
 import com.example.gestorcontactos.Clases.Agenda;
 import com.example.gestorcontactos.Clases.Contact;
+import com.example.gestorcontactos.Clases.ContactTag;
+import com.example.gestorcontactos.Clases.Tag;
 import com.example.gestorcontactos.DB.ClientDataBase;
 import com.example.gestorcontactos.DB.DataBase;
 import com.example.gestorcontactos.MainActivity;
@@ -40,20 +49,19 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactH
     Funciones funciones=Funciones.getInstance();
     private Context context;
     private List<Contact> contactList;
-    private boolean favorite;
     AlertDialog alertDialog;
+    public boolean tag;
 
-
-    public ContactAdapter(Context context, List<Contact> contactList,boolean favorite ) {
+    public ContactAdapter(Context context, List<Contact> contactList, boolean tag) {
         this.context = context;
         this.contactList = contactList;
-        this.favorite=favorite;
+        this.tag=tag;
     }
 
     @NonNull
     @Override
     public ContactHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        if (!favorite){
+        if(!tag){
             View itemView = LayoutInflater.from(parent.getContext())
                     .inflate(R.layout.contact_layout, parent, false);
             return new ContactHolder(itemView);
@@ -68,7 +76,7 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactH
     public void onBindViewHolder(@NonNull ContactHolder holder, int position) {
             Contact contact=contactList.get(position);
             String imageString = contact.getImage();
-            Bitmap profileBitmap = convertStringToBitmap(imageString);
+            Bitmap profileBitmap = funciones.convertStringToBitmap(imageString);
             holder.image.setImageBitmap(profileBitmap);
             holder.name.setText(contact.getName());
             holder.spinner.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
@@ -80,16 +88,15 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactH
                         notifyDataSetChanged();
                         Toast.makeText(context, "Contacto eliminado", Toast.LENGTH_SHORT).show();
                         //deleteContactInDatabase(contact);
-                    } else if (opcionSeleccionada.equals("Actualizar")) {
+                    } else if (opcionSeleccionada.equals("Editar")) {
                         actualizar(contact);
-                        String nombreContacto = contact.getName();
-                        Toast.makeText(context, "Contacto actulizado", Toast.LENGTH_SHORT).show();
                     }
+                    holder.spinner.setSelection(0,false);
                 }
 
                 @Override
                 public void onNothingSelected(AdapterView<?> adapterView) {
-                    // Maneja el evento cuando no se selecciona ninguna opción
+
                 }
             });
             holder.itemView.setOnClickListener(new View.OnClickListener() {
@@ -113,24 +120,77 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactH
                     alertDialog = builder.create();
                     alertDialog.getWindow().setBackgroundDrawableResource(R.color.fondo);
                     alertDialog.show();
-                    //Toast.makeText(context, "Tocaste el contacto: " + contact.getName(), Toast.LENGTH_SHORT).show();
                 }
             });
-            holder.favorite.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    if (!favorite){
-                        agenda.setContactsFavorite(contact);
-                        notifyDataSetChanged();
-                        Toast.makeText(context, "Contacto agregado a favoritos", Toast.LENGTH_SHORT).show();
-                    }else{
-                        agenda.deleteFavorite(contact);
-                        notifyDataSetChanged();
-                        Toast.makeText(context, "Contacto eliminado de favoritos", Toast.LENGTH_SHORT).show();
-                    }
+        holder.tag.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if(!tag){
+                    AlertDialog.Builder builder = new AlertDialog.Builder(v.getContext());
+                    LayoutInflater inflater = LayoutInflater.from(v.getContext());
+                    View dialogView = inflater.inflate(R.layout.tag_selection, null);
+                    builder.setView(dialogView);
+                    AlertDialog alertDialog = builder.create();
+                    RadioGroup radioGroup = dialogView.findViewById(R.id.radio_group);
 
+                    for (Tag opcion : agenda.getTags()) {
+                        RadioButton radioButton = new RadioButton(dialogView.getContext());
+                        radioButton.setText(opcion.getName());
+                        radioButton.setTextSize(TypedValue.COMPLEX_UNIT_DIP, 20); // Establecer tamaño del texto en 20dp
+                        radioGroup.addView(radioButton);
+
+                        radioButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+                            @Override
+                            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                                if (isChecked) {
+                                    try {
+                                        Executors.newSingleThreadExecutor().execute(new Runnable() {
+                                            @Override
+                                            public void run() {
+                                                try {
+                                                    DataBase db = ClientDataBase.getAppDatabase(context);
+                                                    ContactTag contactTag = new ContactTag(contact.getId(), opcion.getId());
+                                                    db.CTDao().insertAll(contactTag);
+                                                } catch (SQLiteConstraintException e) {
+                                                    e.printStackTrace();
+                                                }
+                                            }
+                                        });
+                                    }catch (Exception exception){
+                                        System.out.println(exception);
+                                    }
+                                    Toast.makeText(context,"Contacto agregado a "+opcion.getName(),Toast.LENGTH_SHORT).show();
+                                    alertDialog.dismiss();
+                                }
+                            }
+                        });
+                    }
+                    alertDialog.getWindow().setBackgroundDrawableResource(R.color.fondo);
+                    alertDialog.show();
+                }else{
+                    agenda.clearContactsTag();
+                    Executors.newSingleThreadExecutor().execute(new Runnable() {
+                        @Override
+                        public void run() {
+                            try{
+                                DataBase db = ClientDataBase.getAppDatabase(context.getApplicationContext());
+                                int idtag=db.CTDao().getTagIdByContactName(contact.getName());
+                                int idContactTag=db.CTDao().getIdByContactName_TagId(contact.getName(),idtag);
+                                ContactTag contactTag = new ContactTag(contact.getId(), idtag);
+                                contactTag.setId(idContactTag);
+                                db.CTDao().deleteContactTag(contactTag);
+                            }catch (SQLiteConstraintException e){
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                    notifyDataSetChanged();
+                    Toast.makeText(context,"Contacto eliminado",Toast.LENGTH_SHORT).show();
                 }
-            });
+            }
+        });
+
+
     }
     @Override
     public int getItemCount() {
@@ -139,20 +199,20 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactH
     static class ContactHolder extends RecyclerView.ViewHolder{
         private ImageFilterView image;
         private TextView name;
-        private ImageButton favorite;
+        private ImageButton tag;
         private Spinner spinner;
 
         public ContactHolder(@NonNull View itemView) {
             super(itemView);
             image = itemView.findViewById(R.id.image);
             name = itemView.findViewById(R.id.textName);
-            favorite = itemView.findViewById(R.id.add_favorite);
+            tag = itemView.findViewById(R.id.add_to_tag);
             spinner=itemView.findViewById(R.id.spinner);
             // Agrega las opciones "Eliminar" y "Actualizar" al Spinner
             List<String> opciones = new ArrayList<>();
             opciones.add("Opciones");
+            opciones.add("Editar");
             opciones.add("Eliminar");
-            opciones.add("Actualizar");
 
             ArrayAdapter<String> adapter = new ArrayAdapter<>(itemView.getContext(), android.R.layout.simple_spinner_item, opciones);
             adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
@@ -161,14 +221,27 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactH
         }
     }
     private void delete(Contact contact){
-        Executors.newSingleThreadExecutor().execute(new Runnable() {
-            @Override
-            public void run() {
-                DataBase db = ClientDataBase.getAppDatabase(context.getApplicationContext());
-                agenda.delete(contact);
-                db.contactDao().deleteContact(contact);
-            }
-        });
+        try {
+            Executors.newSingleThreadExecutor().execute(new Runnable() {
+                @Override
+                public void run() {
+                    try{
+                        DataBase db = ClientDataBase.getAppDatabase(context.getApplicationContext());
+                        agenda.delete(contact);
+                        db.contactDao().deleteContact(contact);
+                        int idtag=db.CTDao().getTagIdByContactName(contact.getName());
+                        int idContactTag=db.CTDao().getIdByContactName_TagId(contact.getName(),idtag);
+                        ContactTag contactTag = new ContactTag(contact.getId(), idtag);
+                        contactTag.setId(idContactTag);
+                        db.CTDao().deleteContactTag(contactTag);
+                    }catch (SQLiteConstraintException e){
+                        e.printStackTrace();
+                    }
+                }
+            });
+        }catch (Exception exception){
+            System.out.println(exception);
+        }
 
     }
     public void actualizar(Contact contact){
@@ -196,17 +269,24 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactH
                     contact.setName(setName);
                     contact.setNumber(setPhone);
                     contact.setImage(profileImageString);
-                    Executors.newSingleThreadExecutor().execute(new Runnable() {
-                        @Override
-                        public void run() {
-                            DataBase db = ClientDataBase.getAppDatabase(context.getApplicationContext());
-                            db.contactDao().update(contact);
-                        }
-                    });
+                    try {
+                        Executors.newSingleThreadExecutor().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    DataBase db = ClientDataBase.getAppDatabase(context.getApplicationContext());
+                                    db.contactDao().update(contact);
+                                }catch (SQLiteConstraintException e){
+                                    e.printStackTrace();
+                                }
+                            }
+                        });
+                    }catch (Exception exception){
+                        System.out.println(exception);
+                    }
                     name.setText("");
                     phone.setText("");
-                    Toast.makeText(context, "Contacto Agregadp", Toast.LENGTH_SHORT).show();
-                    //replaceFragment(new contactos());
+                    Toast.makeText(context, "Contacto actualizado", Toast.LENGTH_SHORT).show();
                     alertDialog.dismiss();
                 }
                 notifyDataSetChanged();
@@ -215,9 +295,4 @@ public class ContactAdapter extends RecyclerView.Adapter<ContactAdapter.ContactH
         alertDialog.getWindow().setBackgroundDrawableResource(R.color.fondo);
         alertDialog.show();
     }
-    private Bitmap convertStringToBitmap(String imageString) {
-        byte[] decodedBytes = Base64.decode(imageString, Base64.DEFAULT);
-        return BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
-    }
-
 }
